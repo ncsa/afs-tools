@@ -19,16 +19,16 @@ RED='\033[0;31m'
 NC='\033[0m'  # No Color
 
 err() {
-  echo -e "${RED}✗ ERROR: $*${NC}"
+  echo -e "${RED}✗ ERROR: $*${NC}" 1>&2
 }
 
 success() {
-  echo -e "${GREEN}✓ $*${NC}"
+  echo -e "${GREEN}✓ $*${NC}" 1>&2
 }
 
 die() {
   err "$*"
-  echo "from (${BASH_SOURCE[1]} [${BASH_LINENO[0]}] ${FUNCNAME[1]})"
+  echo "from (${BASH_SOURCE[1]} [${BASH_LINENO[0]}] ${FUNCNAME[1]})" 1>&2
   kill 0
   exit 99
 }
@@ -94,7 +94,7 @@ assert_integer() {
 ENDWHILE=0
 while [[ $# -gt 0 ]] && [[ $ENDWHILE -eq 0 ]] ; do
   case $1 in
-    -h|--help) print_usage;;
+    -h|--help) print_usage; exit 1;;
     -d|--days) DAYS=$2; assert_integer $2; shift;;
     -D|--date) LOGDATE="$2"; assert_integer $2; shift;;
     --) ENDWHILE=1;;
@@ -104,5 +104,12 @@ while [[ $# -gt 0 ]] && [[ $ENDWHILE -eq 0 ]] ; do
   shift
 done
 
+output_format="%10s %15s %48s %5d %19s %s\n"
 process_host_logs \
-| sort -k 1,1 -k 4,4
+| sort -k 1,1 -k 4,4 \
+| while read -r user ip count date server; do
+    client=$( dig -x "${ip}" +short )
+    [[ -z "${client}" ]] && client='--unknown--'
+    printf "$output_format" "$user" "$ip" "$client" "$count" "$date" "$server"
+  done
+echo "Completed full run in '$SECONDS' seconds" 1>&2
