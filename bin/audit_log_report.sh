@@ -51,19 +51,17 @@ mk_log_filenames() {
 
 process_host_logs() {
   local _start _end _elapsed
-  for audit_fn in $( mk_log_filenames ); do
-    for host in "${HOSTS[@]}"; do
-      echo "Server '${host}' ... " 1>&2
+  for host in "${HOSTS[@]}"; do
+    for audit_fn in $( mk_log_filenames ); do
+      echo "Server '${host}' logfile '${audit_fn}'" 1>&2
       _start=$SECONDS
-      set -x
-      $BOS getlog "${host}" "${audit_fn}" \
-    | awk -f audit_log_unique_users_hosts.awk \
-    | sed -e "s/$/ $host/"
-      set +x
+      $BOS getlog "${host}" "${audit_fn}"
       _end=$SECONDS
       let "_elapsed = $_end - $_start"
       echo "  completed in '${_elapsed}' seconds" 1>&2
-    done
+    done \
+    | awk -f audit_log_unique_users_hosts.awk \
+    | sed -e "s/$/ $host/"
   done
 }
 
