@@ -50,9 +50,10 @@ mk_log_filenames() {
 
 
 process_host_logs() {
-  local _start _end _elapsed
+  local _start _end _elapsed _log_filenames
+  _log_filenames=( $( mk_log_filenames ) )
   for host in "${HOSTS[@]}"; do
-    for audit_fn in $( mk_log_filenames ); do
+    for audit_fn in "${_log_filenames[@]}"; do
       echo "Server '${host}' logfile '${audit_fn}'" 1>&2
       _start=$SECONDS
       $BOS getlog "${host}" "${audit_fn}"
@@ -102,7 +103,7 @@ while [[ $# -gt 0 ]] && [[ $ENDWHILE -eq 0 ]] ; do
   shift
 done
 
-output_format="%10s %15s %48s %5d %19s %s\n"
+output_format="%10s %15s %25 %5d %19s %s\n"
 process_host_logs \
 | sort -k 1,1 -k 4,4 \
 | while read -r user ip count date server; do
